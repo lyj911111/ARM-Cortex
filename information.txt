@@ -1,0 +1,5 @@
+information
+
+Test Board name : Nucleo-F429ZI
+Core name       : Arm Cortex-M4
+Serial num.     : STM32F429ZIT6U
