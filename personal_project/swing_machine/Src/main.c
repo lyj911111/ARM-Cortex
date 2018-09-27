@@ -39,17 +39,17 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l4xx_hal.h"
-#include <string.h>
+
 
 /* USER CODE BEGIN Includes */
-uint32_t wheel_pwm=0;
-uint32_t swing_pwm=0;
+#include "lwj.h"
 
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim15;
 
 UART_HandleTypeDef huart2;
 
@@ -63,7 +63,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
-static void MX_TIM2_Init(void);                                    
+static void MX_TIM2_Init(void);
+static void MX_TIM15_Init(void);                                    
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
                                 
@@ -74,9 +75,27 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+uint32_t cnt;
+extern uint32_t wait;
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(wait == 1)		// swing machine wait flag
+	{
+		if(++cnt == 2)	//	1초
+		{
+			wait = 0;
+			cnt = 0;
+		}
+	}
+
+}
+
+
+extern uint32_t PWM_Pulse; // Maximum value default
+uint8_t get_value;
 uint8_t buf[20];	//	UART로 받을 값을 저장.
 
-void ControlWheel(void);	//	바퀴동작함수
 /* USER CODE END 0 */
 
 /**
@@ -111,7 +130,11 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_TIM15_Init();
   /* USER CODE BEGIN 2 */
+
+  // 타이머 인터럽트 가동. 0.5sec 주기
+  HAL_TIM_Base_Start_IT(&htim15);
 
   // 바퀴구동을 위한 PWM, 1ms 주기
   HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1 );
@@ -134,25 +157,22 @@ int main(void)
   /* USER CODE BEGIN 3 */
 
 	  // UART로 수신한 값을 받을 때 수행.
-	  if(HAL_UART_Receive_IT(&huart2, buf, 1) == HAL_OK)
+	  if(HAL_UART_Receive_IT(&huart2, buf, sizeof(buf)) == HAL_OK)
 	  {
-		  HAL_UART_Transmit_IT(&huart2, buf, sizeof(buf));
+		  //HAL_UART_Transmit_IT(&huart2, buf, sizeof(buf));
+		  get_value = buf[0]-'0';
 		  memset((char*)buf, 0, sizeof(buf));
-		  ControlWheel();
+		  Wheel_Control( get_value , PWM_Pulse);
+
 	  }
 
+	  Swing_Contorl( get_value);
+
 /*	  PWM신호 테스트.
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, wheel_pwm);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, wheel_pwm);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, wheel_pwm);
-	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, wheel_pwm);
 
 	  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, swing_pwm);
-	  wheel_pwm++;
 	  swing_pwm++;
 
-	  if(wheel_pwm == 800)
-		  wheel_pwm=0;
 	  if(swing_pwm == 1600)
 	  	  swing_pwm=0;
 	  HAL_Delay(1000);
@@ -344,12 +364,46 @@ static void MX_TIM2_Init(void)
 
 }
 
+/* TIM15 init function */
+static void MX_TIM15_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim15.Instance = TIM15;
+  htim15.Init.Prescaler = 10000;
+  htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim15.Init.Period = 4000;
+  htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim15.Init.RepetitionCounter = 0;
+  htim15.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim15) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim15, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim15, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* USART2 init function */
 static void MX_USART2_UART_Init(void)
 {
 
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
