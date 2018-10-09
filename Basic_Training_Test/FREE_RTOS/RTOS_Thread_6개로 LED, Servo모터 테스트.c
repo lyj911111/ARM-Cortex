@@ -63,7 +63,7 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-osThreadId hled1, hled2, hled3, hled4, hled5, hservo;							//	LED 5개와 Servo motor RTOS 핸들러
+osThreadId hled1, hled2, hled3, hled4, hled5, hservo;  //LED 5개와 Servo motor RTOS 핸들러
 
 /* USER CODE END PV */
 
@@ -77,7 +77,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void LED1_Thread(void const * argument);										//	내가 사용할 RTOS 스레드(함수) 프로토타입 선언
+void LED1_Thread(void const * argument);	  //내가 사용할 RTOS 스레드(함수) 프로토타입 선언
 void LED2_Thread(void const * argument);
 void LED3_Thread(void const * argument);
 void LED4_Thread(void const * argument);
@@ -140,14 +140,14 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(LED1, LED1_Thread, osPriorityNormal, 0, 128);			//	RTOS 연속적인 쓰레드 작업 지시
+  osThreadDef(LED1, LED1_Thread, osPriorityNormal, 0, 128);  //RTOS 연속적인 쓰레드 작업 지시
   osThreadDef(LED2, LED2_Thread, osPriorityNormal, 0, 128);
   osThreadDef(LED3, LED3_Thread, osPriorityNormal, 0, 128);
   osThreadDef(LED4, LED4_Thread, osPriorityNormal, 0, 128);
   osThreadDef(LED5, LED5_Thread, osPriorityNormal, 0, 128);
   osThreadDef(SERVO, Servo_Thread, osPriorityNormal, 0, 128);
 
-  hled1 = osThreadCreate(osThread(LED1), NULL);						//	RTOS 연속적인 쓰레드 작업 지시
+  hled1 = osThreadCreate(osThread(LED1), NULL);	  //RTOS 연속적인 쓰레드 작업 지시
   hled2 = osThreadCreate(osThread(LED2), NULL);
   hled3 = osThreadCreate(osThread(LED3), NULL);
   hled4 = osThreadCreate(osThread(LED4), NULL);
@@ -164,7 +164,7 @@ int main(void)
  
 
   /* Start scheduler */
-  osKernelStart();		//	여기서 모든 스레드 작업이 시작되고 뒤로 넘어가지 않음.
+  osKernelStart();		//여기서 모든 스레드 작업이 시작되고 뒤로 넘어가지 않음.
   
   /* We should never get here as control is now taken by the scheduler */
 
@@ -451,7 +451,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void LED2_Thread(void const * argument)								//	연속쓰레드 함수 원형 작성...
+void LED2_Thread(void const * argument)		//연속쓰레드 함수 원형 작성... (이곳이 중요)
 {
   for(;;)
   {
@@ -505,7 +505,7 @@ void Servo_Thread(void const * argument)
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
-void LED1_Thread(void const * argument)							//	여기까지 연속적인 쓰레드 함수들이 연달아 시행됨.
+void LED1_Thread(void const * argument)		//	여기까지 연속적인 쓰레드 함수들이 연달아 시행됨.
 {
 
   /* USER CODE BEGIN 5 */
